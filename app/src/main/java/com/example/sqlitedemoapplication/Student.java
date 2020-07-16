@@ -1,5 +1,6 @@
 package com.example.sqlitedemoapplication;
 
+
 public class Student {
     //các biến tương ứng với các cột của bảng Students
     private int _studentid;
@@ -31,4 +32,5 @@ public class Student {
     public void setStudentName(String name){
         this._studentname = name;
     }
+
 }

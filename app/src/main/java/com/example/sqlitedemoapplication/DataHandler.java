@@ -6,8 +6,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.util.ArrayList;
+import java.util.List;
 public class DataHandler extends SQLiteOpenHelper {
-
     // các biến mô tả cơ sở dữ liệu
     private static final int DATABASE_VERSION = 1;
     private static final String DATABASE_NAME = "StudentsDB.db";
@@ -24,12 +25,12 @@ public class DataHandler extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
 
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
         //chuỗi lệnh truy vấn tạo bảng Students
         String CREATE_STUDENTS_TABLE = "CREATE TABLE " +
                 TABLE_NAME + "("
                 + COLUMN_ID + " INTEGER PRIMARY KEY," +
                 COLUMN_NAME + " TEXT )";
-
         //thực thi truy vấn
         db.execSQL(CREATE_STUDENTS_TABLE);
     }
@@ -42,7 +43,7 @@ public class DataHandler extends SQLiteOpenHelper {
         //Tạo bảng mới
         onCreate(db);
     }
-
+    //hiển thị dữ liệu từ bảng Students
     public String loadDataHandler() {
         String result = "";
         //chuỗi truy vấn SELECT
@@ -53,7 +54,7 @@ public class DataHandler extends SQLiteOpenHelper {
         //kết quả trả về lưu trong đối tượng Cursor
         Cursor cursor = db.rawQuery(query, null);
         //duyệt qua dữ liệu từ đối tượng Cursor
-        while (((Cursor) cursor).moveToNext()) {
+        while (cursor.moveToNext()) {
             //nhận giá trị cột thứ nhất (StudentID)
             int result_0 = cursor.getInt(0);
             //nhận giá trị cột thứ hai (StudentName)
@@ -68,7 +69,7 @@ public class DataHandler extends SQLiteOpenHelper {
         db.close();
         return result;
     }
-
+    //thêm dữ liệu đến bảng Students
     public void addDataHandler(Student student) {
         //tạo đối tượng ContentValues
         ContentValues values = new ContentValues();
@@ -80,4 +81,83 @@ public class DataHandler extends SQLiteOpenHelper {
         db.insert(TABLE_NAME, null, values);
         db.close();
     }
+    //tìm kiếm Student theo StudentName
+    //kết quả trả về là Student đầu tiên trong danh sách kết quả
+    public Student findFisrtDataHandler(String studentname) {
+
+        //chuỗi truy vấn tìm kiếm Student theo StudentName
+        String query = "Select * FROM " + TABLE_NAME
+                + " WHERE " + COLUMN_NAME + " = "
+                + "'" + studentname + "'";
+        SQLiteDatabase db = this.getWritableDatabase();
+        // Thực thi truy vấn và gán kết quả đến đối tượng Cursor
+        Cursor cursor = db.rawQuery(query, null);
+        Student student = new Student();
+        //trả về hàng đầu tiên trong kết quả
+        if (cursor.moveToFirst()) {
+            cursor.moveToFirst();
+            student.setStudentID(Integer.parseInt(cursor.getString(0)));
+            student.setStudentName(cursor.getString(1));
+            cursor.close();
+        } else {
+            student = null;
+        }
+        db.close();
+        //trả về sinh viên đầu tiên tìm được
+        return student;
+    }
+    //tìm kiếm Student theo StudentName
+    //kết quả trả về là tất cả Student trong danh sách kết quả
+    public List<Student> findAllDataHandler(String studentname) {
+        //chuỗi truy vấn tìm kiếm Student theo StudentName
+        String query = "Select * FROM " + TABLE_NAME
+                + " WHERE " + COLUMN_NAME + " = "
+                + "'" + studentname + "'";
+        SQLiteDatabase db = this.getWritableDatabase();
+        //danh sách chứa tất cả các Student tìm được
+        List<Student> lst =  new ArrayList<Student>();
+        // Thực thi truy vấn và gán kết quả đến đối tượng Cursor
+        Cursor cursor = db.rawQuery(query, null);
+        //duyệt qua tất cả các hàng từ hàng đầu tiên
+        if(cursor.moveToFirst()) {
+            do {
+                Student student = new Student();
+                student.setStudentID(Integer.parseInt(cursor.getString(0)));
+                student.setStudentName(cursor.getString(1));
+                lst.add(student);
+            }while (cursor.moveToNext());
+        }
+        //đóng các đối tượng
+        cursor.close();
+        db.close();
+        //trả về danh sách sinh viên tìm được
+        return lst;
+    }
+    public boolean deleteDataHandler(int ID) {
+        boolean result = false;
+        String query = "Select * FROM " + TABLE_NAME + " WHERE "
+                + COLUMN_ID + " = '" + String.valueOf(ID) + "'";
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.rawQuery(query, null);
+        Student student = new Student();
+        if (cursor.moveToFirst()) {
+            student.setStudentID(Integer.parseInt(cursor.getString(0)));
+            db.delete(TABLE_NAME, COLUMN_ID + "=?",
+                    new String[] {
+                            String.valueOf(student.getStudentID())
+                    });
+            cursor.close();
+            result = true;
+        }
+        db.close();
+        return result;
+    }
+    public boolean updateDataHandler(int ID, String name) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues args = new ContentValues();
+        args.put(COLUMN_ID, ID);
+        args.put(COLUMN_NAME, name);
+        return db.update(TABLE_NAME, args, COLUMN_ID + " = " + ID, null) > 0;
+    }
+
 }
